@@ -1,0 +1,14 @@
+jap = 이미지 파일
+추출된_이미지 = 추출된 이미지 저장 파일
+convert_serverid_to_logbookid = 이미지추출 py 코드파일
+copy_event_characters = 포뻥캐 이미지 추출 실행기
+delete_images = 추출된_이미지 자동 삭제 프로그램
+sakura.db = 필수 데이터베이스
+
+
+1. 사쿠라db의 MstEventCharacterBoost 테이블에서 updateTimestamp_를 최신순으로 본 후
+추출하고 싶은 포뻥캐 목록의 serverId_를 복사한다.
+
+2. copy_event_characters를 실행시켜 id를 입력한다.
+
+3. 추출된_이미지가 자동으로 저장된다.

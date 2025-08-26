@@ -1,0 +1,11 @@
+MstEventCharacterBoost 테이블의 updateTimestamp_을 값순서대로 보기를 한다.
+원하는 updateTimestamp_ 값을  copy_event_characters배치파일을 실행시켜 입력하면 저절로 추출됨
+
+sakura.db파일 폴더에 있어야함
+
+추출할 포뻥캐 목록 eventableType_
+MapGameEvent = 트레저맵 -> 복사 후  filters.globalTM 
+KizunaBattleEvent = 유대결전 -> 복사 후  filters.globalKC 부분에 적용
+TrailEvent = 해적왕의 궤적 -> 복사 후  filters.globalPKA
+ = 대난투 filters.comodorevsempress 
+
