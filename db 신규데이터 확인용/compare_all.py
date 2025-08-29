@@ -7,7 +7,6 @@ def find_db_files(directory='.'):
     all_files = os.listdir(directory)
     print(f"발견된 모든 파일: {all_files}")
 
-    # 결과 파일 이름은 제외하고 찾습니다.
     db_files = [f for f in all_files if f.endswith(('.db', '.sqlite')) and f != '추가목록.db']
 
     if len(db_files) < 2:
@@ -25,20 +24,17 @@ def get_table_names(conn):
     tables = [table[0] for table in cursor.fetchall()]
     return tables
 
-# <-- 추가된 함수: 테이블의 컬럼 이름을 가져옵니다.
 def get_column_names(conn, table_name):
     """특정 테이블의 모든 컬럼 이름을 리스트로 반환합니다."""
     cursor = conn.cursor()
-    # PRAGMA table_info는 테이블의 각 컬럼에 대한 정보를 반환합니다.
-    # 결과의 두 번째 값(인덱스 1)이 컬럼 이름입니다.
     cursor.execute(f'PRAGMA table_info("{table_name}")')
     return [row[1] for row in cursor.fetchall()]
 
 def compare_and_extract(db1_path, db2_path, result_path):
-    """두 데이터베이스를 비교하고 추가된 데이터를 새 DB에 저장합니다."""
-    conn1, conn2, result_conn = None, None, None # 변수 초기화
+    """두 데이터베이스를 비교하고 추가된 데이터의 총 개수를 반환합니다."""
+    total_added_count = 0  # <-- 수정된 부분: 추가된 데이터 총 개수를 셀 변수
+    conn1, conn2, result_conn = None, None, None
     try:
-        # 데이터베이스 연결
         conn1 = sqlite3.connect(db1_path)
         conn2 = sqlite3.connect(db2_path)
         result_conn = sqlite3.connect(result_path)
@@ -53,7 +49,7 @@ def compare_and_extract(db1_path, db2_path, result_path):
 
         if not common_tables:
             print("\n!!! 경고: 두 데이터베이스에 이름이 같은 테이블이 하나도 없습니다. 작업을 종료합니다.")
-            return
+            return 0
 
         print(f"\n--- 3. 공통 테이블 비교 시작 ---")
         print(f"공통 테이블: {common_tables}")
@@ -61,9 +57,8 @@ def compare_and_extract(db1_path, db2_path, result_path):
         for table_name in common_tables:
             print(f"\n▶ '{table_name}' 테이블 비교 중...")
 
-            # <-- 수정된 부분: 기준 컬럼을 동적으로 결정합니다.
             key_column = None
-            table_columns = get_column_names(conn1, table_name) # conn1 기준으로 컬럼 확인
+            table_columns = get_column_names(conn1, table_name)
 
             if 'serverId_' in table_columns:
                 key_column = 'serverId_'
@@ -72,13 +67,11 @@ def compare_and_extract(db1_path, db2_path, result_path):
 
             if not key_column:
                 print(f"   !!! 경고: '{table_name}' 테이블에 'serverId_' 또는 'updateTimestamp_' 컬럼이 없어 건너뜁니다.")
-                continue # 다음 테이블로 넘어감
+                continue
 
             print(f"   -> 기준 컬럼 '{key_column}'(으)로 비교를 시작합니다.")
-            # <-- 여기까지 수정된 부분
 
             try:
-                # 각 테이블의 ID 목록을 집합(set)으로 가져오기
                 cursor1 = conn1.cursor()
                 cursor1.execute(f'SELECT "{key_column}" FROM "{table_name}"')
                 ids1 = {row[0] for row in cursor1.fetchall()}
@@ -90,6 +83,9 @@ def compare_and_extract(db1_path, db2_path, result_path):
                 print(f"   -> 조회된 ID {len(ids2)}개")
 
                 added_ids = sorted(list(ids2 - ids1))
+                
+                # <-- 수정된 부분: 발견된 데이터 개수를 총 개수에 더함
+                total_added_count += len(added_ids)
 
                 if not added_ids:
                     print(f"   -> 추가된 ID 없음")
@@ -124,10 +120,26 @@ def compare_and_extract(db1_path, db2_path, result_path):
         if conn2: conn2.close()
         if result_conn: result_conn.close()
         print("\n--- 4. 모든 작업 완료 ---")
+        
+    return total_added_count  # <-- 수정된 부분: 총 개수를 반환
 
 if __name__ == '__main__':
     db1, db2 = find_db_files()
     
     if db1 and db2:
         output_db = '추가목록.db'
-        compare_and_extract(db1, db2, output_db)
+        
+        if os.path.exists(output_db):
+            os.remove(output_db)
+            print(f"\n🧹 기존 '{output_db}' 파일을 삭제했습니다. 새로운 결과로 교체됩니다.")
+
+        # <-- 수정된 부분: 함수가 반환하는 총 개수를 변수에 저장
+        total_added = compare_and_extract(db1, db2, output_db)
+
+        # <-- 추가된 부분: 최종 결과 요약 메시지 출력
+        print("\n---  최종 결과 요약 ---")
+        if total_added > 0:
+            print(f"🎉 총 {total_added}개의 새로운 데이터가 발견되어 '{output_db}'에 저장되었습니다.")
+        else:
+            print(f"ℹ️ 비교 결과, 추가된 데이터가 없습니다.")
+        # --- 여기까지 추가 ---
