@@ -1,9 +1,14 @@
 @echo off
-cd /d "C:\Users\Administrator\Desktop\DB Hangul Production\각종 TOOL\캐릭터 이름 자동 한글화"
-echo [INFO] 현재 경로로 이동 완료
 
-:: Python 실행
+:: [해결] 한글 깨짐(인코딩) 문제를 방지하기 위해 코드 페이지를 UTF-8(65001)로 변경합니다.
+chcp 65001 > nul
+
+:: 배치 파일이 있는 폴더로 이동합니다.
+cd /d "%~dp0"
+
+echo [INFO] 파이썬 스크립트를 실행합니다...
 python copy_event_characters.py
 
 echo.
+echo 작업이 완료되었습니다.
 pause
